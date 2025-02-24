@@ -3,11 +3,18 @@ import time
 import json
 
 def obtener_luz():
-    # Usa termux-sensor para obtener datos del sensor de luz
-    resultado = subprocess.run(['termux-sensor', '-s', 'light', '-n', '1'], 
-                              capture_output=True, text=True)
-    datos = json.loads(resultado.stdout)
-    return datos['light']['values'][0]  # Nivel de luz en lux
+    try:
+        resultado = subprocess.run(['termux-sensor', '-s', 'light', '-n', '1'], 
+                                  capture_output=True, text=True)
+        datos = json.loads(resultado.stdout)
+        if 'LIGHT' in datos and 'values' in datos['LIGHT']:
+            return datos['LIGHT']['values'][0]  # Tomamos el primer valor en lux
+        else:
+            print("No se obtuvieron datos del sensor de luz.")
+            return None
+    except Exception as e:
+        print(f"Error al acceder al sensor: {e}")
+        return None
 
 def encender_linterna():
     subprocess.run(['termux-torch', 'on'])
@@ -22,6 +29,10 @@ def main():
     
     while True:
         nivel_luz = obtener_luz()
+        if nivel_luz is None:
+            print("No hay datos válidos del sensor. Terminando...")
+            break
+        
         print(f"Nivel de luz: {nivel_luz} lux")
         
         if nivel_luz < umbral_luz and not linterna_encendida:
